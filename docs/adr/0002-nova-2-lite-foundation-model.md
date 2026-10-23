@@ -1,0 +1,3 @@
+# Support Configurable LLM Providers (Gemini 3.5 Flash & Amazon Nova 2 Lite)
+
+We configured `fact_checker/agent.py` to support both **Google Gemini 3.5 Flash** (`langchain-google-genai` via Vertex AI / Gemini API, matching the original ADK fact-checker agent) and **Amazon Nova 2 Lite** (`us.amazon.nova-2-lite-v1:0` via `ChatBedrockConverse`) controlled by the `LLM_PROVIDER` environment variable (`google` or `bedrock`). Both LLM providers invoke the live **Amazon Bedrock AgentCore Gateway Web Search** tool (`web-search-tool___WebSearch`) over MCP with AWS IAM (SigV4), allowing immediate end-to-end execution with Gemini 3.5 Flash even while AWS account-level Bedrock model access (`Error 002`) is pending AWS Support resolution.
