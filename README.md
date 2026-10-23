@@ -8,19 +8,23 @@ This project is the LangChain + AWS Bedrock AgentCore counterpart to `fact-check
 
 ## Architecture Overview
 
+![Fact Checker Agent with LangChain & AWS Bedrock AgentCore Architecture](./docs/architecture.jpg)
+
 ```mermaid
 flowchart LR
     Caller["Caller (Local CLI / boto3)"] -->|"SigV4 / HTTP"| Runtime["AgentCore Runtime\n(LangChain Agent Container)"]
-    Runtime -->|"Converse API"| Model["Amazon Bedrock LLM\n(us.amazon.nova-2-lite-v1:0)"]
+    Runtime -->|"Converse API / Vertex AI"| Model["LLM Provider\n(Gemini 3.5 Flash / Bedrock Nova 2 Lite)"]
     Runtime -->|"MCP over Streamable HTTP (SigV4)"| Gateway["AgentCore Gateway"]
     Gateway -->|"GATEWAY_IAM_ROLE"| WebSearch["AWS Web Search Connector\n(web-search.v1)"]
 ```
 
-- **Agent Framework**: LangChain (`create_agent`) supporting both **Gemini 3.5 Flash** (`ChatGoogleGenerativeAI`, `temperature=0.1`) and **Amazon Bedrock Nova 2 Lite** (`ChatBedrockConverse`, `temperature=0.1`) via `LLM_PROVIDER` (see [ADR 0002](./docs/adr/0002-nova-2-lite-foundation-model.md)).
-- **Web Search Tool**: Connected via **Amazon Bedrock AgentCore Gateway** (`connectorId: "web-search"`) over MCP (`tools/list` discovers `web-search-tool___WebSearch`).
-- **Inbound & Outbound Auth**: AWS IAM (`SigV4`) end-to-end (see [ADR 0003](./docs/adr/0003-aws-iam-sigv4-authentication.md)).
-- **Infrastructure as Code**: 100% managed via Terraform in [`infra/`](./infra) (see [ADR 0001](./docs/adr/0001-terraform-for-aws-infrastructure.md)).
-- **Domain Glossary**: See [`CONTEXT.md`](./CONTEXT.md).
+### How the AWS Services Work Together
+
+1. **Infrastructure Provisioning (`Terraform`)**: Provisions the **Amazon ECR** repository, least-privilege **IAM Roles** (Runtime execution role & Gateway outbound role), the **AgentCore Gateway**, the **Web Search Gateway Target**, and the **AgentCore Runtime & Endpoint** in `us-east-1` (see [`infra/`](./infra) and [ADR 0001](./docs/adr/0001-terraform-for-aws-infrastructure.md)).
+2. **Compute & Container Hosting (`Amazon Bedrock AgentCore Runtime` + `Amazon ECR` + `CloudWatch Logs`)**: Pulls the `linux/arm64` FastAPI + LangChain container image from **Amazon ECR**, runs it behind the SigV4-authenticated **AgentCore Runtime Endpoint** (`GET /ping` and `POST /invocations` on port `8080`), and streams execution logs to **Amazon CloudWatch Logs**.
+3. **LLM Reasoning (`Gemini 3.5 Flash` / `Amazon Bedrock Nova 2 Lite`)**: The LangChain agent (`create_agent`) evaluates the incoming claim with skepticism (`temperature=0.1`) and determines what search queries to run (see [ADR 0002](./docs/adr/0002-nova-2-lite-foundation-model.md)).
+4. **Live Web Grounding (`AgentCore Gateway` + `Web Search Connector`)**: The LangChain agent connects to the **AgentCore Gateway** over MCP (`Streamable HTTP` signed with AWS IAM `SigV4`, see [ADR 0003](./docs/adr/0003-aws-iam-sigv4-authentication.md)), discovers `web-search-tool___WebSearch` via `tools/list`, and invokes it. The Gateway uses its `GATEWAY_IAM_ROLE` (`bedrock-agentcore:InvokeWebSearch`) to query the **AWS Managed Web Search Service (`web-search.v1`)**, returning semantic snippets and knowledge-graph facts from Amazon's live web index.
+5. **Domain Glossary**: See [`CONTEXT.md`](./CONTEXT.md).
 
 ---
 
