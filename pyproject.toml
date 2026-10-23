@@ -1,0 +1,18 @@
+[project]
+name = "fact-checker-agent-langchain-aws"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "boto3>=1.43.118",
+    "fastapi>=0.161.1",
+    "langchain>=1.4.7",
+    "langchain-aws>=1.9.0",
+    "langchain-google-genai>=4.4.2",
+    "langchain-mcp-adapters>=0.3.2",
+    "mcp-proxy-for-aws>=1.7.0",
+    "pydantic>=2.14.1",
+    "python-dotenv>=1.2.4",
+    "uvicorn[standard]>=0.54.0",
+]

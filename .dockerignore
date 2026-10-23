@@ -1,0 +1,9 @@
+.git
+.venv
+__pycache__
+*.pyc
+.env
+infra/.terraform
+infra/*.tfstate*
+docs/
+CONTEXT.md
