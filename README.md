@@ -8,6 +8,8 @@ This project is the LangChain + AWS Bedrock AgentCore counterpart to `fact-check
 
 ## Architecture Overview
 
+![Fact Checker Agent with LangChain & AWS Bedrock AgentCore Architecture](./docs/architecture.jpg)
+
 ```mermaid
 flowchart LR
     Caller["Caller (Local CLI / boto3)"] -->|"SigV4 / HTTP"| Runtime["AgentCore Runtime\n(LangChain Agent Container)"]
